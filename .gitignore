@@ -1,0 +1,30 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log
+
+# Optional build directories
+dist/
+build/
+coverage/
+.out/
+
+# dotenv
+.env
+.env.*  # for multiple env files
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Puppeteer cache
+.chromium/
+.puppeteer-cache/
