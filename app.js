@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // route
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/scraper', scraperRoutes) // use this router for all "/scraper/*" routes
+app.use('/scrapper', scraperRoutes) // use this router for all "/scraper/*" routes
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
