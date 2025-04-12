@@ -39,9 +39,7 @@ exports.getScrappedDataByKeywords = async (keywords) => {
 
             result[keyword] = {};
             // make postCountMap ...
-            const postingCountMap = await scrapPostingCountMonthly(page, keyword);
-            result[keyword].postTotalCountMonthly = postingCountMap.totalPosts;
-            result[keyword].postMeaningfullCount = postingCountMap.meaningfulCount;
+            result[keyword].postMeaningfullCountMonthly = await scrapPostingCountMonthly(page, keyword);
 
             const blogs = await scrapTopBlogs(page);
 
@@ -160,36 +158,43 @@ async function scrapPostingCountMonthly(blogViewPage, keyword) {
         await blogViewPage.waitForSelector('ul.lst_view li.bx', { visible: true });
         console.log('📌 Filter applied, results loaded.');
 
-        // 5) Infinite‑scroll until no more new items load
-        let previousHeight = await blogViewPage.evaluate(() => document.body.scrollHeight);
-        while (true) {
-            await blogViewPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-            await sleep(2000);
-            const newHeight = await blogViewPage.evaluate(() => document.body.scrollHeight);
-            if (newHeight === previousHeight) break;
-            previousHeight = newHeight;
-        }
-        console.log('📌 Reached end of list.');
-
-        // 6) Count all the titles
-        const totalPosts = await blogViewPage.$$eval('.title_area', els => els.length);
 
         const tokens = keyword
             .trim()
             .split(/\s+/)
             .map(w => w.toLowerCase());
-        const meaningfulCount = await blogViewPage.$$eval(
-            '.title_link',
-            (anchors, tokens) => {
-                return anchors.filter(a => {
-                    const title = (a.textContent || '').toLowerCase();
-                    return tokens.every(t => title.includes(t));
-                }).length;
-            },
-            tokens
-        );
-        console.log(`✅ Total posts in last month: ${totalPosts}`);
-        return { meaningfulCount, totalPosts };
+
+        // 5) Infinite‑scroll until no more new items load
+        let prevMeaningful = 0;
+        while (true) {
+            await blogViewPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await sleep(1000);
+
+            const anchorDetails = await blogViewPage.$$eval(
+                '.title_link',
+                anchors => anchors.map(a => ({
+                    href: a.href,
+                    text: a.textContent.trim(),
+                }))
+            );
+            console.log(anchorDetails);
+
+            const currMeaningful = await blogViewPage.$$eval(
+                '.title_link',
+                (anchors, tokens) =>
+                    anchors.filter(a => {
+                        const title = (a.textContent || '').toLowerCase();
+                        return tokens.every(t => title.includes(t));
+                    }).length,
+                tokens
+            );
+
+            if (currMeaningful === prevMeaningful) break;
+            prevMeaningful = currMeaningful;
+        }
+        console.log('📌 Reached end of list.');
+
+        return prevMeaningful ;
 
     } catch (error) {
         console.error(`❌ Failed to scrap monthly count:`, error);
